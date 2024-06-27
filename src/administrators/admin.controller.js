@@ -5,10 +5,9 @@ const index = async (req, res) => {
         const admins = await AdminService.index();
         return res.status(200).json(admins);
     } catch (error) {
-        return res.status(error.statusCode).json({
+        return res.status(error.statusCode ? error.statusCode : 500).json({
             status: error.status,
-            message: "Internal Server Error",
-            error: error.message
+            message: error.message
         });
     }
 }

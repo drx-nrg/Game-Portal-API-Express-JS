@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model administrators {
+  id            Int    @id @default(autoincrement()) @db.UnsignedInt
+  username      String    @unique(map: "administrators_username_unique") @db.VarChar(255)
+  password      String    @db.VarChar(255)
+  last_login_at DateTime? @db.Timestamp(0)
+  created_at    DateTime? @db.Timestamp(0)
+  updated_at    DateTime? @db.Timestamp(0)
+}
+
+model game_versions {
+  id           Int    @id @default(autoincrement()) @db.UnsignedInt
+  game_id      Int    @db.UnsignedInt
+  version      String    @db.VarChar(255)
+  storage_path String    @db.VarChar(255)
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+  deleted_at   DateTime? @db.Timestamp(0)
+  game         games     @relation(fields: [game_id], references: [id], onUpdate: Restrict)
+  scores       scores[]
+
+}
+
+model games {
+  id          Int    @id @default(autoincrement()) @db.UnsignedInt
+  title       String    @db.VarChar(255)
+  slug        String    @unique(map: "games_slug_unique") @db.VarChar(255)
+  description String    @db.Text
+  created_by  Int    @db.UnsignedInt
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+  deleted_at  DateTime? @db.Timestamp(0)
+  users       users     @relation(fields: [created_by], references: [id], onUpdate: Restrict, map: "games_created_by_foreign")
+  game_versions game_versions[]
+
+  @@index([created_by], map: "games_created_by_foreign")
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  migration String @db.VarChar(255)
+  batch     Int
+}
+
+model scores {
+  id              Int           @id @default(autoincrement()) @db.UnsignedInt
+  user_id         Int           @db.UnsignedInt
+  game_version_id Int           @db.UnsignedInt
+  score           Float
+  created_at      DateTime?     @db.Timestamp(0)
+  updated_at      DateTime?     @db.Timestamp(0)
+  game_version    game_versions @relation(fields: [game_version_id], references: [id], onUpdate: Restrict)
+  user            users         @relation(fields: [user_id], references: [id], onUpdate: Restrict)
+
+}
+
+model users {
+  id            Int    @id @default(autoincrement()) @db.UnsignedInt
+  username      String    @unique(map: "users_username_unique") @db.VarChar(255)
+  password      String    @db.VarChar(255)
+  last_login_at DateTime? @db.Timestamp(0)
+  created_at    DateTime? @db.Timestamp(0)
+  updated_at    DateTime? @db.Timestamp(0)
+  deleted_at    DateTime? @db.Timestamp(0)
+  delete_reason String?   @db.VarChar(255)
+  games         games[]
+  scores        scores[]
+}
+
+model access_tokens {
+  id         Int    @id @default(autoincrement())
+  user_id    Int
+  token      String @db.VarChar(255)
+  expires_at String @db.VarChar(255)
+}

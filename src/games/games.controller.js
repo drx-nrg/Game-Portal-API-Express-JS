@@ -65,11 +65,16 @@ const destroy = async (req, res) => {
     }
 }
 
+const upload = async (req, res) => {
+    await GameService.upload(req, res);
+}
+
 
 module.exports = {
     index,
     show,
     store,
     update,
-    destroy
+    destroy,
+    upload
 }

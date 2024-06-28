@@ -1,4 +1,8 @@
 const express = require('express');
+const multer = require('multer');
+
+const path = require('path')
+
 const { body, validationResult } = require('express-validator')
 
 const router = express.Router();
@@ -22,8 +26,10 @@ router.put('/:slug', verifyToken, isUser,
 GameController.update);
 router.delete('/:slug', verifyToken, isUser, GameController.destroy);
 
+router.post('/:slug/upload', verifyToken, isUser, GameController.upload);
+
 router.get('/:slug/scores', verifyToken, ScoreController.index);
-router.post('/:slug/scores', verifyToken, isUser, ScoreController.store);
+router.post('/:slug/scores', ScoreController.store);
 
 
 module.exports = router

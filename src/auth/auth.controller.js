@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt')
 const prisma = require('../database/prisma');
 
+const { getCurrentTimestamp } = require('../utils/function');
+
 const signup = async (req, res) => {
     let { username, password } = req.body;
     
@@ -82,6 +84,15 @@ const signin = async (req, res) => {
             });
         }
 
+        await prisma.administrators.update({
+            where: {
+                id: admin.id
+            },
+            data: {
+                last_login_at: getCurrentTimestamp()
+            }
+        });
+
         role = "administrator";
         user = admin
     }else{
@@ -92,6 +103,15 @@ const signin = async (req, res) => {
                 message: "Wrong username or password"
             });
         }
+
+        await prisma.users.update({
+            where: {
+                id: user.id
+            },
+            data: {
+                last_login_at: getCurrentTimestamp()
+            }
+        });
     }
 
     const config = {

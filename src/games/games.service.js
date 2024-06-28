@@ -1,4 +1,9 @@
 const prisma = require('../database/prisma');
+
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
 const ResponseError = require('../error/ResponseError');
 const { generateSlug } = require('../utils/function');
 
@@ -218,10 +223,84 @@ const destroy = async (slug, user) => {
     });
 }
 
+const upload = async (req, res) => {
+    const { slug } = req.params;
+    const user = req.user;
+
+    try {
+        const game = await prisma.games.findFirst({
+            where: {
+                slug
+            },
+            include: {
+                game_versions: {
+                    orderBy: {
+                        version: "desc"
+                    }
+                }
+            }
+        });
+
+        if (!game) {
+            return res.status(404).json({ error: "Game not found" });
+        }
+
+        if(game.created_by !== user.id){
+            return res.status(403).json({
+                status: "forbidden",
+                message: "You are not the game author"
+            });
+        }
+
+        const latestVer = game.game_versions[0].version;
+        const filePath = path.join(__dirname, `../../public/games/${game.slug}/${parseInt(latestVer.split("")[1]) + 1}`);
+
+        if(!fs.existsSync(filePath)){
+            fs.mkdirSync(filePath, { recursive: true });
+        }
+
+        const storage = multer.diskStorage({
+            destination: function(req, file, cb) {
+                cb(null, filePath);
+            },
+            filename: function(req, file, cb) {
+                cb(null, file.originalname);
+            }
+        });
+
+        const uploadFile = multer({ storage: storage }).fields([
+            { name: 'zipfile', maxCount: 1 },
+            { name: 'thumbnail', maxCount: 1 },
+        ]);
+
+        uploadFile(req, res, async (err) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+
+            const newVersionData = {
+                game_id: game.id,
+                version: `v${parseInt(latestVer.split("")[1]) + 1}`,
+                storage_path: `games/${game.id}/v${parseInt(latestVer.split("")[1]) + 1}`
+            }
+
+            await prisma.game_versions.create({
+                data: { ...newVersionData }
+            })
+
+            res.status(200).json({ status: "success" });
+        });
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+}
+
 module.exports = {
     index,
     show,
     store,
     update,
-    destroy
+    destroy,
+    upload
 }
